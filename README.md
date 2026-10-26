@@ -1,2 +1,17 @@
-# Campus-ReportnResponse-System
-This a group project for school assignment. It runs locally only. I'm responsible for developing the Admin Maintenance and Member Maintenance module that had account management features, including assigning admins, editing, deleting, activating/deactivating accounts, and viewing report history with AJAX features
+## Test Accounts
+
+Use the following accounts to test the system.
+
+**Admin Account**
+- **Gmail:** admin@gmail.com
+- **Password:** Admin123
+
+**Member Account**
+- **Gmail:** member@gmail.com
+- **Password:** Member123
+
+## Database Setup
+
+The database and test accounts will be automatically generated on the first run of the application (press **F5** in Visual Studio).
+
+No manual database setup is required.
