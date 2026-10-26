@@ -1,0 +1,93 @@
+﻿@model CampusReportSystem.Models.Report
+
+@{
+    ViewData["Title"] = "Report Details";
+}
+
+<div class="container mt-4">
+    <h2 class="h2-text">Report Details</h2>
+    <hr />
+
+    <div class="card col-md-8">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3 text-secondary mb-3">Category</dt>
+                <dd class="col-sm-9 text-dark fw-bold mb-3">
+                        @(Model.Category?.Name ?? "Unassigned")
+                </dd>
+
+                <dt class="col-sm-3 text-secondary">Title</dt>
+                <dd class="col-sm-9 text-dark fw-bold mb-3">
+                    @Model.Title
+                </dd>
+
+                <dt class="col-sm-3 text-secondary">Created At</dt>
+                <dd class="col-sm-9 text-muted">
+                    @Model.CreatedAT.ToString("yyyy-MM-dd HH:mm:ss")
+                </dd>
+
+                <dt class="col-sm-3 text-secondary mb-3">Description</dt>
+                <dd class="col-sm-9 text-dark mb-3">
+                    <div class="p-2 border rounded bg-light" style="white-space: pre-line; min-height: 80px;">@Model.Description</div>
+                </dd>
+            </dl>
+
+            @if (!string.IsNullOrEmpty(Model.ImagePath) || (Model.Latitude.HasValue && Model.Longitude.HasValue))
+            {
+                <div class="row mt-3 pt-3 border-top">
+                    @if (!string.IsNullOrEmpty(Model.ImagePath))
+                    {
+                        <div class="@((Model.Latitude.HasValue && Model.Longitude.HasValue) ? "col-md-6" : "col-12") mb-3">
+                            <span class="text-secondary fw-bold d-block mb-2">Photo</span>
+                            <img src="@Model.ImagePath" alt="Report Image" class="img-fluid rounded border shadow-sm w-100" style="height: 250px; object-fit: cover;" />
+                        </div>
+                    }
+
+                    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                    {
+                        <div class="@(!string.IsNullOrEmpty(Model.ImagePath) ? "col-md-6" : "col-12") mb-3">
+                            <span class="text-secondary fw-bold d-block mb-2">Incident Location</span>
+                            <div id="detailMap" style="height: 250px; border-radius: 12px; border: 1.5px solid #334155;"></div>
+                            <small class="text-muted d-block mt-1"><i class="bi bi-geo-fill"></i> TAR UMT KL Campus</small>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="submit-btn me-2">Edit Report</a>
+    <button onclick="window.print()" class="submit-btn btn-print-custom me-2">🖨️ Print / Save PDF</button>
+    <a asp-action="Index" class="submit-btn btn-secondary-custom">Back to List</a>
+</div>
+
+
+@section Scripts {
+    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+    {
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const lat = @Model.Latitude;
+                const lng = @Model.Longitude;
+                const reportTitle = @Json.Serialize(Model.Title);
+
+                const detailMap = L.map('detailMap').setView([lat, lng], 17);
+
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(detailMap);
+
+                L.marker([lat, lng]).addTo(detailMap)
+                    .bindPopup(`<b>Incident Location</b><br>${reportTitle}`)
+                    .openPopup();
+
+                setTimeout(() => detailMap.invalidateSize(), 200);
+            });
+        </script>
+    }
+}

@@ -1,0 +1,186 @@
+@model CampusReportSystem.Models.User
+
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+
+<div class="container mt-4">
+    <div class="card shadow-sm col-lg-8 mx-auto">
+        <div class="card-header bg-primary text-white py-3">
+            <h4 class="mb-0 fw-semibold">Edit Profile Details</h4>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                @* Hidden fields required for model binding *@
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Password" />
+                <input type="hidden" asp-for="Role" />
+                <input type="hidden" asp-for="RoleSeqNo" />
+                <input type="hidden" asp-for="IsActive" />
+                <input type="hidden" asp-for="CreatedAt" />
+                <input type="hidden" asp-for="ProfilePicturePath" id="ProfilePicturePath" />
+
+                @* Profile Picture Upload & Preview *@
+                <div class="text-center mb-4">
+                    <img id="profilePreview" 
+                         src="@(string.IsNullOrEmpty(Model.ProfilePicturePath) ? "/images/default-avatar.png" : Model.ProfilePicturePath)" 
+                         class="rounded-circle img-thumbnail shadow-sm mb-3" 
+                         style="width: 130px; height: 130px; object-fit: cover;" 
+                         alt="Current Profile Picture" />
+                    
+                    <div class="text-start">
+                        <label class="form-label fw-bold">Profile Picture</label>
+                        <input type="file" id="fileInput" class="form-control mb-1" accept="image/*" />
+                        <div class="form-text">Accepted formats: JPG, PNG, GIF.</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-bold">Full Name</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-bold">Email Address</label>
+                    <input asp-for="Email" class="form-control" type="email" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PhoneNumber" class="form-label fw-bold">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="+60123456789" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Gender" class="form-label fw-bold">Gender</label>
+                        <select asp-for="Gender" class="form-select">
+                            <option value="">-- Select Gender --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="BirthDate" class="form-label fw-bold">Date of Birth</label>
+                        <input asp-for="BirthDate" class="form-control" type="date" />
+                        <span asp-validation-for="BirthDate" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between pt-3 border-top mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CROPPER MODAL -->
+<div class="modal fade" id="cropperModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">✂️ Crop Profile Picture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div style="max-height: 400px; width: 100%; overflow: hidden;">
+                    <img id="imageToCrop" src="" class="w-100" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success rounded-pill px-4" id="btnCropSave">Save Photo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <!-- Cropper.js JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <script>
+        let cropper = null;
+        const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+        const imageToCrop = document.getElementById('imageToCrop');
+        const fileInput = document.getElementById('fileInput');
+
+        // 1. Handle File Selection and Open Cropper
+        fileInput.addEventListener('change', function (e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    openCropper(event.target.result);
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        });
+
+        // 2. Initialize Cropper.js
+        function openCropper(imageSrc) {
+            imageToCrop.src = imageSrc;
+            cropperModal.show();
+
+            document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 1, // 1:1 Square/Circle crop
+                    viewMode: 1,
+                });
+            }, { once: true });
+        }
+
+        // Reset file input if modal canceled
+        document.getElementById('cropperModal').addEventListener('hidden.bs.modal', function () {
+            fileInput.value = '';
+        });
+
+        // 3. Save Cropped Image & Upload
+        document.getElementById('btnCropSave').addEventListener('click', async function () {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 300,
+                height: 300
+            });
+
+            const base64Image = canvas.toDataURL('image/png');
+
+            try {
+                const response = await fetch('/Member/UploadProfilePicture', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ base64Image: base64Image })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('profilePreview').src = result.imagePath;
+                    document.getElementById('ProfilePicturePath').value = result.imagePath;
+                    cropperModal.hide();
+                } else {
+                    alert('Upload failed: ' + result.message);
+                }
+            } catch (err) {
+                alert('An error occurred while uploading the image.');
+            }
+        });
+    </script>
+}

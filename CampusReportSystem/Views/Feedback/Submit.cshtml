@@ -1,0 +1,120 @@
+@model CampusReportSystem.Models.Feedback
+
+@{
+    ViewData["Title"] = "Submit Feedback";
+}
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <div class="card-body">
+            <h2 class="fw-bold text-dark mb-1">💬 Share Your Feedback</h2>
+            <p class="text-muted mb-4">We value your input! Let us know how we can improve the platform.</p>
+
+            <div id="alertBox" class="alert d-none" role="alert"></div>
+
+            <form id="feedbackForm">
+                @Html.AntiForgeryToken()
+
+                <!-- Subject -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Subject</label>
+                    <input type="text" id="Subject" name="Subject" class="form-control" placeholder="Brief title for your feedback" required />
+                </div>
+
+                <!-- Feedback Type -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Feedback Type</label>
+                    <select id="Type" name="Type" class="form-select" required>
+                        <option value="" disabled selected>Select feedback type</option>
+                        <option value="General">General Feedback</option>
+                        <option value="Bug Report">Bug Report</option>
+                        <option value="Feature Request">Feature Request</option>
+                        <option value="Facility Issue">Facility Issue</option>
+                    </select>
+                </div>
+
+                <!-- Rating -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold d-block">Rating</label>
+                    <div class="rating-stars d-flex gap-2 text-warning fs-3">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <input type="radio" class="btn-check" name="Rating" id="star-@i" value="@i" required />
+                            <label class="btn btn-outline-warning border-0 px-2 py-0" for="star-@i">★</label>
+                        }
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Message / Details</label>
+                    <textarea id="Message" name="Message" class="form-control" rows="5" placeholder="Write your detailed feedback here..." required></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a asp-action="History" class="text-decoration-none">📋 View My Past Feedback</a>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        <button type="button" onclick="submitFeedback()" class="btn btn-primary rounded-pill px-4">Submit Feedback</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function submitFeedback() {
+            const subject = document.getElementById('Subject').value.trim();
+            const type = document.getElementById('Type').value;
+            const message = document.getElementById('Message').value.trim();
+            const ratingElement = document.querySelector('input[name="Rating"]:checked');
+            const alertBox = document.getElementById('alertBox');
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+
+            if (!subject || !type || !message || !ratingElement) {
+                alertBox.className = "alert alert-danger";
+                alertBox.innerText = "Please complete all fields and select a rating.";
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            const feedbackData = {
+                Subject: subject,
+                Type: type,
+                Rating: parseInt(ratingElement.value),
+                Message: message
+            };
+
+            try {
+                const response = await fetch('/Feedback/SubmitAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': tokenElement ? tokenElement.value : ''
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alertBox.className = "alert alert-success";
+                    alertBox.innerText = result.message;
+                    alertBox.classList.remove('d-none');
+                    document.getElementById('feedbackForm').reset();
+                } else {
+                    alertBox.className = "alert alert-danger";
+                    alertBox.innerText = result.message;
+                    alertBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                alertBox.className = "alert alert-danger";
+                alertBox.innerText = "An error occurred while submitting feedback.";
+                alertBox.classList.remove('d-none');
+            }
+        }
+    </script>
+}

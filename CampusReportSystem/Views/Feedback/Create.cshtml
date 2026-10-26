@@ -1,0 +1,70 @@
+@model CampusReportSystem.Models.Feedback
+
+@{
+    ViewData["Title"] = "Submit Feedback";
+}
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <div class="card-body">
+            <h2 class="fw-bold text-dark mb-1">💬 Share Your Feedback</h2>
+            <p class="text-muted mb-4">We value your input! Let us know how we can improve the platform.</p>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!-- Subject -->
+                <div class="mb-3">
+                    <label asp-for="Subject" class="form-label fw-semibold">Subject</label>
+                    <input asp-for="Subject" class="form-control" placeholder="Brief title for your feedback" required />
+                    <span asp-validation-for="Subject" class="text-danger"></span>
+                </div>
+
+                <!-- Feedback Type -->
+                <div class="mb-3">
+                    <label asp-for="Type" class="form-label fw-semibold">Feedback Type</label>
+                    <select asp-for="Type" class="form-select" required>
+                        <option value="" disabled selected>Select feedback type</option>
+                        <option value="General">General Feedback</option>
+                        <option value="Bug Report">Bug Report</option>
+                        <option value="Feature Request">Feature Request</option>
+                        <option value="Facility Issue">Facility Issue</option>
+                    </select>
+                    <span asp-validation-for="Type" class="text-danger"></span>
+                </div>
+
+                <!-- Star Rating -->
+                <div class="mb-3">
+                    <label asp-for="Rating" class="form-label fw-semibold d-block">Rating</label>
+                    <div class="rating-stars d-flex gap-2 text-warning fs-3">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <input type="radio" class="btn-check" name="Rating" id="star-@i" value="@i" required />
+                            <label class="btn btn-outline-warning border-0 px-2 py-0" for="star-@i">★</label>
+                        }
+                    </div>
+                    <span asp-validation-for="Rating" class="text-danger"></span>
+                </div>
+
+                <!-- Message -->
+                <div class="mb-4">
+                    <label asp-for="Message" class="form-label fw-semibold">Message / Details</label>
+                    <textarea asp-for="Message" class="form-control" rows="5" placeholder="Write your detailed feedback here..." required></textarea>
+                    <span asp-validation-for="Message" class="text-danger"></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Submit Feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

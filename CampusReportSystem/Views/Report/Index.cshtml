@@ -1,0 +1,251 @@
+﻿@model IEnumerable<CampusReportSystem.Models.Report>
+
+@{
+    ViewData["Title"] = "Reports List";
+    var categoryCounts = Model
+        .GroupBy(r => r.Category?.Name ?? "Unassigned")
+        .Select(g => new { Category = g.Key, Count = g.Count() })
+        .ToList();
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+
+<div id="alertContainer"></div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="custom-title">Reports List</h2>
+    <a asp-action="Create" class="submit-btn">+ Create New Report</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 offset-md-3">
+        <canvas id="categoryChart" style="max-height: 250px;"></canvas>
+    </div>
+</div>
+
+<div class="mb-4">
+    <table id="reportsTable" class="table-custom">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No.</th>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th style="width: 30%;" class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int index = 1;
+            }
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@(index++)</td>
+                    <td>@item.CreatedAT.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@item.Title</td>
+                    <td>@(item.Category?.Name ?? "Unassigned")</td>
+                    <td>
+                    <span class="badge @(item.Status switch {
+                        "In Progress" => "bg-primary",
+                        "Resolved" => "bg-success",
+                        "Rejected" => "bg-danger",
+                        _ => "bg-warning text-dark"
+                    })">
+                        @(string.IsNullOrEmpty(item.Status) ? "Pending" : item.Status)
+                    </span>
+                    </td>
+                    <td class="text-center">
+                        <a asp-action="Detail" asp-route-id="@item.Id" class="detail-btn">Detail</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="edit-btn">Edit</a>
+                        @if (Context.Session.GetString("UserRole") == "Admin")
+                        {
+                            <button type="button" 
+                                    class="edit-btn bg-warning text-dark border-0 me-2"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#statusModal" 
+                                    data-id="@item.Id" 
+                                    data-status="@item.Status">
+                                Status
+                            </button>
+                        }
+                        <button type="button"
+                                class="btn p-0 border-0 bg-transparent text-danger ms-2"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteModal"
+                                data-id="@item.Id"
+                                data-title="@item.Title"
+                                title="Delete">
+                            <i class="bi bi-trash3 fs-5"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-dark">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="statusModalLabel">Update Report Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="UpdateStatus" method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="reportIdToUpdateStatus" name="id" />
+                    <div class="mb-3">
+                        <label for="reportStatusSelect" class="form-label fw-bold">Select New Status:</label>
+                        <select id="reportStatusSelect" name="status" class="form-select">
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="submit-btn btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="submit-btn">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered custom-delete-modal">
+        <div class="modal-content text-dark">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete report: <strong id="reportTitleToDelete"></strong>?
+            </div>
+            <div class="modal-footer">
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" id="reportIdToDelete" name="id" />
+                    <button type="button" class="submit-btn btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="delete-btn">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#reportsTable').DataTable({
+                "pageLength": 5, // each page list 5 record
+                "lengthMenu": [5, 10, 15],
+                "order": [[1, "desc"]]
+            });
+
+            const labels = @Json.Serialize(categoryCounts.Select(c => c.Category));
+            const data = @Json.Serialize(categoryCounts.Select(c => c.Count));
+
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const textColor = isDarkMode ? '#ffffff' : '#0f172a';
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            window.categoryChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6c757d']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            onClick: (e) => e.stopPropagation(),
+
+                            labels: {
+                                color: textColor,
+                                font: { size: 15 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const themeObserver = new MutationObserver(() => {
+                if (window.categoryChart) {
+                    const isDark = document.body.classList.contains('dark-mode');
+                    window.categoryChart.options.plugins.legend.labels.color = isDark ? '#ffffff' : '#0f172a';
+                    window.categoryChart.update();
+                }
+            });
+            themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+            const deleteModal = document.getElementById('deleteModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const reportId = button.getAttribute('data-id');
+                    const reportTitle = button.getAttribute('data-title');
+
+                    document.getElementById('reportIdToDelete').value = reportId;
+                    document.getElementById('reportTitleToDelete').textContent = reportTitle;
+                });
+            }
+            const statusModal = document.getElementById('statusModal');
+            if (statusModal) {
+                statusModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const reportId = button.getAttribute('data-id');
+                    const reportStatus = button.getAttribute('data-status');
+
+                    document.getElementById('reportIdToUpdateStatus').value = reportId;
+                    if (reportStatus) {
+                        document.getElementById('reportStatusSelect').value = reportStatus;
+                    }
+                });
+            }
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        if (status) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            let message = '';
+            let alertClass = '';
+
+            if (status === 'created') {
+                message = 'Created successfully!';
+                alertClass = 'custom-alert-created';
+            } else if (status === 'updated') {
+                message = 'Updated successfully!';
+                alertClass = 'custom-alert-updated';
+            } else if (status === 'deleted') {
+                message = 'Deleted successfully!';
+                alertClass = 'custom-alert-deleted';
+            }
+
+            if (message) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `custom-alert ${alertClass} fade show`;
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = message;
+                document.getElementById('alertContainer').appendChild(alertDiv);
+                setTimeout(() => {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => alertDiv.remove(), 300);
+                }, 2000);
+            }
+        }
+    </script>
+}

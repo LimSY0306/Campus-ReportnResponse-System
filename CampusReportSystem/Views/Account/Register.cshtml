@@ -1,0 +1,122 @@
+@model CampusReportSystem.Models.RegisterViewModel
+
+<div class="container mt-4" style="max-width: 500px;">
+    <div class="card shadow-sm p-4 rounded-4">
+        <h2 class="text-center fw-bold mb-4">User Registration</h2>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <form asp-action="Register" method="post" id="registerForm">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <!-- Full Name -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Full Name</label>
+                <input asp-for="Name" class="form-control" placeholder="Please enter your full name" required />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <!-- Email Address -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Email Address</label>
+                <input asp-for="Email" id="userEmail" class="form-control" placeholder="Please enter your email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Phone Number (10 Digits)</label>
+                <input asp-for="PhoneNumber" class="form-control" placeholder="e.g. 0123456789" />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Password</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Please enter your password" required />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Confirm Password</label>
+                <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Please confirm your password" required />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="form-check mb-3">
+                <input asp-for="AcceptTerms" class="form-check-input" type="checkbox" id="acceptTerms" required />
+                <label class="form-check-label small" for="acceptTerms">
+                    I agree to the <a href="#" class="text-decoration-none fw-bold">Terms and Conditions</a>
+                </label>
+            </div>
+
+            <input type="hidden" name="captchaAnswer" id="captchaAnswer" value="" />
+            <input type="hidden" name="userCaptcha" id="userCaptcha" value="" />
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" id="btnRegister" class="btn btn-primary w-100 fw-bold">Register</button>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary w-100 fw-bold">Back to Home</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var form = document.getElementById("registerForm");
+            var isCaptchaVerified = false;
+
+            
+            var num1 = Math.floor(Math.random() * 9) + 1;
+            var num2 = Math.floor(Math.random() * 9) + 1;
+            var correctAnswer = num1 + num2;
+
+            document.getElementById("captchaAnswer").value = correctAnswer;
+
+            form.addEventListener("submit", function (e) {
+                
+                if (isCaptchaVerified) return;
+
+                if (!form.checkValidity()) {
+                    return; 
+                }
+
+               
+                e.preventDefault();
+
+                var userInput = prompt(`Human Verification:\nWhat is ${num1} + ${num2} ?`);
+
+                if (userInput === null) {
+                    
+                    return;
+                }
+
+                if (parseInt(userInput.trim()) === correctAnswer) {
+                    document.getElementById("userCaptcha").value = userInput.trim();
+                    isCaptchaVerified = true;
+                    form.submit(); 
+                } else {
+                    alert("Incorrect captcha answer! Please try again.");
+                }
+            });
+        });
+    </script>
+}

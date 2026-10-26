@@ -1,0 +1,30 @@
+@model CampusReportSystem.Models.Category
+
+@{
+    ViewData["Title"] = "Category Details";
+}
+
+<div class="container mt-4">
+    <h2>Category Details</h2>
+    <hr />
+
+    <div class="card col-md-6">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Category ID</dt>
+                <dd class="col-sm-8">@($"C{Model.Id:D2}")</dd>
+
+                <dt class="col-sm-4">Category Name</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Description</dt>
+                <dd class="col-sm-8">@Model.Description</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a asp-action="Edit" asp-route-id="@Model?.Id" class="submit-btn">Edit</a>
+        <a asp-action="Index" class="submit-btn btn-secondary-custom">Back to List</a>
+    </div>
+</div>

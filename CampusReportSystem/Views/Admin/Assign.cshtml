@@ -1,0 +1,73 @@
+﻿@model List<CampusReportSystem.Models.User>
+
+@{
+    ViewData["Title"] = "Assign Admin";
+}
+
+<div id="alertContainer"></div>
+
+<h2 class="custom-title mb-4">Assign Members to Admin</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm rounded-4 p-4">
+    <form asp-action="Assign" method="post">
+        @Html.AntiForgeryToken()
+
+        <p class="text-muted">Select members to promote to Admin role. They will be assigned the next available Admin ID sequence.</p>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">No member accounts available to assign.</div>
+        }
+        else
+        {
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" id="selectAll" />
+                        </th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="selectedIds" value="@user.Id" class="member-checkbox" />
+                            </td>
+                            <td>@user.FormattedId</td>
+                            <td>@user.Name</td>
+                            <td>@user.Email</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Assign Selected</button>
+                <a asp-action="Index" class="btn btn-secondary">Back to Admin List</a>
+            </div>
+        }
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        // Select/Deselect all
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.member-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    </script>
+}

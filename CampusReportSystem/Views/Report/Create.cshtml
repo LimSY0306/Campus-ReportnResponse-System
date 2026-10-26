@@ -1,0 +1,153 @@
+﻿@model CampusReportSystem.Models.Report
+
+@{
+    ViewData["Title"] = "Create Report";
+}
+
+<h2 class="h2-text">Create New Report</h2>
+<hr />
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <strong>@TempData["SuccessMessage"]</strong> 
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" enctype="multipart/form-data" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    Category<span class="text-danger fw-bold"> *</span>
+                </label>
+                <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.Categories">
+                    <option value="">-- Select Category --</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label">
+                    Title <span class="text-danger fw-bold">*</span>
+                </label>
+                <input asp-for="Title" class="form-control" placeholder="Please enter report title..." />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">
+                    Description <span class="text-danger fw-bold">*</span>
+                </label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Please enter details..."></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ImageFile" class="form-label"></label>
+                <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
+                <span asp-validation-for="ImageFile" class="text-danger"></span>
+            </div>
+
+            <input type="hidden" asp-for="Latitude" id="Latitude" />
+            <input type="hidden" asp-for="Longitude" id="Longitude" />
+
+            <div class="mb-3">
+                <button type="button" class="submit-btn" id="toggleMapBtn" onclick="toggleMap()">
+                    📍 + Add Location Pin
+                </button>
+
+                <div id="mapWrapper" class="mt-2" style="display: none;">
+                    <div id="map" style="height: 220px; border-radius: 12px; border: 1.5px solid #334155;"></div>
+                    <small class="text-muted d-block mt-1">Click on the map to mark incident location in TAR UMT.</small>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit</button>
+            <a asp-area="" asp-controller="Report" asp-action="Index" class="submit-btn btn-secondary-custom">Back</a>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let map;
+        let marker;
+        let isMapInitialized = false;
+
+        const tarumtLat = 3.2151;
+        const tarumtLng = 101.7283;
+
+        function toggleMap() {
+            const wrapper = document.getElementById('mapWrapper');
+            const btn = document.getElementById('toggleMapBtn');
+
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                btn.innerHTML = '📍 - Remove / Hide Location Pin';
+                btn.className = 'submit-btn';
+
+                if (!isMapInitialized) {
+                    initMap();
+                    isMapInitialized = true;
+                } else {
+                    setTimeout(() => map.invalidateSize(), 100);
+                }
+            } else {
+                wrapper.style.display = 'none';
+                btn.innerHTML = '📍 + Add Location Pin';
+                btn.className = 'submit-btn';
+            }
+        }
+
+        function initMap() {
+            map = L.map('map').setView([tarumtLat, tarumtLng], 16);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            const existingLat = document.getElementById('Latitude').value;
+            const existingLng = document.getElementById('Longitude').value;
+
+            if (existingLat && existingLng) {
+                const savedLatLng = [parseFloat(existingLat), parseFloat(existingLng)];
+                map.setView(savedLatLng, 17);
+                marker = L.marker(savedLatLng).addTo(map);
+            }
+
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                document.getElementById('Latitude').value = lat;
+                document.getElementById('Longitude').value = lng;
+
+                if (marker) {
+                    marker.setLatLng(e.latlng);
+                } else {
+                    marker = L.marker(e.latlng).addTo(map);
+                }
+            });
+
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const existingLat = document.getElementById('Latitude').value;
+            if (existingLat) {
+                toggleMap();
+            }
+        });
+    </script>
+}

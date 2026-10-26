@@ -1,0 +1,32 @@
+﻿@model CampusReportSystem.Models.User
+
+@{
+    ViewData["Title"] = "Delete Member";
+}
+
+<div class="container mt-4">
+    <h2 class="text-danger">Delete Member Account</h2>
+    <h5 class="text-secondary">Are you sure you want to delete this member account?</h5>
+    <hr />
+
+    <div class="card border-danger col-md-6 mb-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Member ID</dt>
+                <dd class="col-sm-8">@Model.FormattedId</dd>
+
+                <dt class="col-sm-4">Full Name</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Email</dt>
+                <dd class="col-sm-8">@Model.Email</dd>
+            </dl>
+        </div>
+    </div>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </form>
+</div>

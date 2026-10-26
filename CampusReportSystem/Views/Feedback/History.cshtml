@@ -1,0 +1,74 @@
+@model IEnumerable<CampusReportSystem.Models.Feedback>
+
+@{
+    ViewData["Title"] = "My Feedback History";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">📋 My Feedback History</h2>
+            <p class="text-muted mb-0">Track responses and notes left by the admin team.</p>
+        </div>
+        <a asp-action="Submit" class="btn btn-primary rounded-pill px-4">+ Submit New Feedback</a>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-4">
+            <h5 class="text-muted mb-0">You haven't submitted any feedback yet.</h5>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4 p-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">@item.Subject</h5>
+                                    <small class="text-muted">Submitted on @item.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary me-1">@item.Type</span>
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <span class="badge bg-warning text-dark">⏳ Pending</span>
+                                    }
+                                    else if (item.Status == "Reviewed")
+                                    {
+                                        <span class="badge bg-success">✔️ Reviewed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">🚫 Dismissed</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Rating & User Message -->
+                            <div class="p-3 bg-light rounded-3 mb-3">
+                                <div class="text-warning mb-1">
+                                    @for (int i = 0; i < item.Rating; i++) { <text>★</text> }
+                                </div>
+                                <p class="mb-0 text-dark" style="white-space: pre-line;">@item.Message</p>
+                            </div>
+
+                            <!-- Admin Response -->
+                            @if (!string.IsNullOrEmpty(item.AdminResponse))
+                            {
+                                <div class="p-3 bg-primary-subtle border-start border-4 border-primary rounded-3">
+                                    <strong class="text-primary d-block mb-1">💬 Admin Response:</strong>
+                                    <p class="mb-0 text-dark">@item.AdminResponse</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

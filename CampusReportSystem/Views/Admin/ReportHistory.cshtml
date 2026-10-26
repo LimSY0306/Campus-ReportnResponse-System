@@ -1,0 +1,153 @@
+﻿@model CampusReportSystem.Models.User
+
+@{
+    ViewData["Title"] = "Admin Report History";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Report History: @Model.Name (@Model.FormattedId - @Model.Email)</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Admins
+        </a>
+    </div>
+    <hr />
+
+    @if (!Model.Reports.Any())
+    {
+        <div class="alert alert-info">
+            This admin has not submitted any campus reports yet.
+        </div>
+    }
+    else
+    {
+        <table class="table-custom" id="reportHistoryTable" style="table-layout: fixed; width: 100%;">
+            <thead>
+                <tr>
+                    <th data-sort="Id" class="sortable" style="width: 8%;">Report ID <span class="sort-icon"></span></th>
+                    <th data-sort="Title" class="sortable" style="width: 18%;">Title <span class="sort-icon"></span></th>
+                    <th data-sort="Category" class="sortable" style="width: 14%;">Category <span class="sort-icon"></span></th>
+                    <th data-sort="CreatedAT" class="sortable" style="width: 15%;">Submitted Date <span class="sort-icon"></span></th>
+                    <th data-sort="Image" class="sortable" style="width: 10%;">Image <span class="sort-icon"></span></th>
+                    <th data-sort="Description" class="sortable" style="width: 25%;">Description <span class="sort-icon"></span></th>
+                    <th data-sort="Status" class="sortable" style="width: 10%;">Status <span class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in Model.Reports.OrderByDescending(r => r.CreatedAT))
+                {
+                    <tr>
+                        <td>@($"R{report.Id:D4}")</td>
+                        <td style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;"><strong>@report.Title</strong></td>
+                        <td><span class="badge bg-primary">@(report.Category?.Name ?? "Uncategorized")</span></td>
+                        <td>@report.CreatedAT.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td class="text-center">
+                            @if (!string.IsNullOrEmpty(report.ImagePath))
+                            {
+                                <img src="@report.ImagePath" alt="Photo" style="max-height: 50px; object-fit: cover; max-width: 100%;" class="img-thumbnail" />
+                            }
+                            else
+                            {
+                                <span class="text-muted">No Image</span>
+                            }
+                        </td>
+                        <td style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">@report.Description</td>
+                        <td>
+                            @if (report.Status == "Pending")
+                            {
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                            else if (report.Status == "In Progress")
+                            {
+                                <span class="badge bg-info">In Progress</span>
+                            }
+                            else if (report.Status == "Resolved")
+                            {
+                                <span class="badge bg-success">Resolved</span>
+                            }
+                            else if (report.Status == "Rejected")
+                            {
+                                <span class="badge bg-danger">Rejected</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">@report.Status</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.getElementById('reportHistoryTable');
+            if (!table) return;
+            const headers = table.querySelectorAll('thead th.sortable');
+            let sortBy = 'CreatedAT';
+            let sortOrder = 'desc';
+
+            function getValue(column, cell) {
+                const text = cell.textContent.trim();
+                if (column === 'Id') {
+                    // Extract numeric part from "R0001" -> 1
+                    return parseInt(text.replace('R', ''), 10);
+                } else if (column === 'CreatedAT') {
+                    // Already in "yyyy-MM-dd HH:mm" format; compare as string
+                    return text;
+                } else {
+                    return text;
+                }
+            }
+
+            function sortTable(column, order) {
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const index = Array.from(headers).findIndex(h => h.dataset.sort === column);
+                const isNumeric = (column === 'Id');
+
+                rows.sort((a, b) => {
+                    const aVal = getValue(column, a.children[index]);
+                    const bVal = getValue(column, b.children[index]);
+                    let comparison = 0;
+                    if (isNumeric) {
+                        comparison = aVal - bVal;
+                    } else {
+                        comparison = aVal.localeCompare(bVal);
+                    }
+                    return order === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+
+                headers.forEach(h => {
+                    const icon = h.querySelector('.sort-icon');
+                    if (h.dataset.sort === column) {
+                        icon.innerHTML = order === 'asc' ? ' &#9650;' : ' &#9660;';
+                    } else {
+                        icon.innerHTML = '';
+                    }
+                });
+            }
+
+            headers.forEach(header => {
+                header.addEventListener('click', function() {
+                    const col = this.dataset.sort;
+                    if (col === sortBy) {
+                        sortOrder = (sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                        sortBy = col;
+                        sortOrder = 'asc';
+                    }
+                    sortTable(sortBy, sortOrder);
+                });
+            });
+
+            // Initial sort
+            sortTable(sortBy, sortOrder);
+        });
+    </script>
+}
